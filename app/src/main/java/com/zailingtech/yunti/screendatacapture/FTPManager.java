@@ -29,7 +29,6 @@ import it.sauronsoftware.ftp4j.FTPIllegalReplyException;
 public class FTPManager {
 
     private static final String TAG = "FTPManager";
-    private static String mAtSDCardPath;
     private final ExecutorService mThreadPool;
     private final FTPClient mFTPClient;
     private final CmdFactory mCmdFactory;
