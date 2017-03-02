@@ -14,7 +14,7 @@ import java.util.Collections;
 
 public class MainActivityPresenter {
 
-    MainActivity mainActivity;
+    private MainActivity mainActivity;
     private FTPManager ftpManager;
 
     public MainActivityPresenter(MainActivity mainActivity) {
