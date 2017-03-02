@@ -39,7 +39,7 @@ public class FTPManager {
     private static final String password = "chenyu123";
     private boolean mDameonRunning = true;
     private static final int MAX_THREAD_NUMBER = 5;
-    private static final int MAX_DAMEON_TIME_WAIT = 50 * 1000; // 心跳间隔 millisecond
+    private static final int MAX_DAMEON_TIME_WAIT = 60 * 1000; // 心跳间隔 millisecond
 
     private static final int MENU_OPTIONS_BASE = 0;
     private static final int MSG_CMD_CONNECT_OK = MENU_OPTIONS_BASE + 1;

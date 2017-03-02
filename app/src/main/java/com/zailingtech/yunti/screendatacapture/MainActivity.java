@@ -21,7 +21,7 @@ import java.util.Date;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private TextView tv01;
-    private String screenID = "0000"; //默认ID
+    private String screenID = "888888"; //默认ID
     private Button btn_start;
     private Button btn_stop;
     private Button btn_upload;
