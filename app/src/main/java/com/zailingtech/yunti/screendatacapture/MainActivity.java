@@ -7,7 +7,6 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -21,7 +20,7 @@ import java.util.Date;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private TextView tv01;
-    private String screenID = "888888"; //默认ID
+    private String screenID = "000000"; //默认ID
     private Button btn_start;
     private Button btn_stop;
     private Button btn_upload;
@@ -56,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //处理SD卡中的包的数量
         presenter.handlePcapFils(pcapFiles, maxNum);
         rootPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-        Log.e("oncreate", getIntent().getAction());
+        LogManager.getLogger().e(getIntent().getAction());
     }
 
     private void initView() {
@@ -93,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 presenter.uploadFile();
                 break;
             case R.id.btn_info:
-                Log.e("pcap文件夹中数据包详情--后", presenter.getPcapFiles().toString());
+                LogManager.getLogger().e("pcap文件夹中数据包详情--后: %s", presenter.getPcapFiles().toString());
                 break;
         }
     }
@@ -117,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         CommandsHelper.stopCapture();
         unregisterReceiver(actionReceiver);
         presenter.disConnect();
-        Log.e("onDestroy", "抓包APP已退出");
+        LogManager.getLogger().e("抓包APP已退出");
     }
 
     class ActionReceiver extends BroadcastReceiver {
@@ -132,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             tv01.setText(screenID + " : " + rootPath);
             String action = bundle.getString("action");
             if (action != null) {
-                Log.e("抓包APP收到的指令", action);
+                LogManager.getLogger().e("抓包APP收到的指令: %s", action);
                 if (action.equals("start")) {
                     startCapture();
                 } else if (action.equals("stop")) {

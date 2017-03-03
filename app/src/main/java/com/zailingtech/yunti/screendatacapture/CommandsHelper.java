@@ -2,7 +2,6 @@ package com.zailingtech.yunti.screendatacapture;
 
 import android.os.Environment;
 import android.text.TextUtils;
-import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -36,7 +35,7 @@ public class CommandsHelper {
                 String[] commands = new String[1];
                 commands[0] = "tcpdump -vv -s 0 -w " + ROOT_DIR + fileName;
                 execCmd(commands, suProcess);
-                Log.e("抓包状态", "开始抓包");
+                LogManager.getLogger().e("抓包状态: %s", "开始抓包");
                 isCaptruing = true;
                 suProcess.waitFor();
             }
@@ -52,7 +51,7 @@ public class CommandsHelper {
             suProcess.destroy();
             suProcess = null;
             isCaptruing = false;
-            Log.e("抓包状态", "停止抓包");
+            LogManager.getLogger().e("抓包状态: %s", "停止抓包");
         }
     }
 

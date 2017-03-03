@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.widget.Toast;
 
 import java.io.File;
@@ -59,7 +58,7 @@ public class FTPManager {
 
         @Override
         public void handleMessage(Message msg) {
-            Log.e(TAG, "mHandler --->" + msg.what);
+            LogManager.getLogger().e("mHandler --->" + msg.what);
             switch (msg.what) {
                 case MSG_CMD_CONNECT_OK:
                     toast("FTP服务器连接成功");
@@ -108,7 +107,7 @@ public class FTPManager {
 
         @Override
         public void run() {
-            Log.e(TAG, "DameonFtpConnector ### run");
+            LogManager.getLogger().e("DameonFtpConnector ### run");
             while (mDameonRunning) {
                 if (mFTPClient != null && !mFTPClient.isConnected()) {
                     try {
@@ -171,7 +170,7 @@ public class FTPManager {
                 String[] welcome = mFTPClient.connect(hostName, serverPort);
                 if (welcome != null) {
                     for (String value : welcome) {
-                        Log.e(TAG, "connect " + value);
+                        LogManager.getLogger().e("connect " + value);
                     }
                 }
                 mFTPClient.login(userName, password);
@@ -221,7 +220,7 @@ public class FTPManager {
 
             try {
                 String pwd = mFTPClient.currentDirectory();
-                Log.e(TAG, "pwd --- > " + pwd);
+                LogManager.getLogger().e("pwd --- > " + pwd);
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -239,7 +238,7 @@ public class FTPManager {
             try {
                 mCurrentPWD = mFTPClient.currentDirectory();
                 FTPFile[] ftpFiles = mFTPClient.list();
-                Log.e(TAG, " Request Size  : " + ftpFiles.length);
+                LogManager.getLogger().e(" Request Size  : " + ftpFiles.length);
                 synchronized (mLock) {
                     mFileList.clear();
                     mFileList.addAll(Arrays.asList(ftpFiles));
@@ -290,10 +289,10 @@ public class FTPManager {
             path = params[0];
             try {
                 String fileName = path.substring(path.lastIndexOf("/") + 1);
-                Log.e("上传文件名", fileName);
+                LogManager.getLogger().e("上传文件名: %s", fileName);
                 executeLISTRequest();
                 for (FTPFile ftpFile : mFileList) {
-                    Log.e("FTP服务器文件", ftpFile.getName());
+                    LogManager.getLogger().e("FTP服务器文件: %s", ftpFile.getName());
                     if (ftpFile.getName().equals(fileName)) {
                         mHandler.sendEmptyMessage(MSG_FILENAME_REPETITION);
                         return false;
@@ -315,7 +314,7 @@ public class FTPManager {
         }
 
         protected void onPostExecute(Boolean result) {
-            Log.e("上传结果", path + "  结果：" +result);
+            LogManager.getLogger().e("上传结果: %s", path + "  结果：" +result);
             toast(result ? path + "上传成功" : "上传失败");
         }
     }
@@ -336,29 +335,29 @@ public class FTPManager {
 
         @Override
         public void aborted() {
-            Log.e(TAG, "FTPDataTransferListener : aborted");
+            LogManager.getLogger().e("FTPDataTransferListener : aborted");
         }
 
         @Override
         public void completed() {
-            Log.e(TAG, "FTPDataTransferListener : completed");
+            LogManager.getLogger().e("FTPDataTransferListener : completed");
         }
 
         @Override
         public void failed() {
-            Log.e(TAG, "FTPDataTransferListener : failed");
+            LogManager.getLogger().e("FTPDataTransferListener : failed");
         }
 
         @Override
         public void started() {
-            Log.e(TAG, "FTPDataTransferListener : started");
+            LogManager.getLogger().e("FTPDataTransferListener : started");
         }
 
         @Override
         public void transferred(int length) {
             totolTransferred += length;
             float percent = (float) totolTransferred / this.fileSize;
-            Log.e(TAG, "FTPDataTransferListener : transferred # percent ： " + percent);
+            LogManager.getLogger().e("FTPDataTransferListener : transferred # percent ： " + percent);
         }
     }
 

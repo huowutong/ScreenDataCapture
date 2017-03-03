@@ -1,7 +1,6 @@
 package com.zailingtech.yunti.screendatacapture;
 
 import android.os.Environment;
-import android.util.Log;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -54,7 +53,7 @@ public class MainActivityPresenter {
     }
 
     public void handlePcapFils(ArrayList<File> pcapFiles, int maxNum) {
-        Log.e("pcap文件夹中数据包详情", pcapFiles.toString());
+        LogManager.getLogger().e("pcap文件夹中数据包详情: %d %s", pcapFiles.size(), pcapFiles.toString());
         if (pcapFiles == null) {
             return;
         }
