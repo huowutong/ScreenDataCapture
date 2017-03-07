@@ -53,6 +53,7 @@ public class FTPManager {
     private Thread mDameonThread;
     private Object mLock = new Object();
     private List<FTPFile> mFileList = new ArrayList<FTPFile>();
+    private UploadListener listener;
 
     private Handler mHandler = new Handler() {
 
@@ -101,6 +102,10 @@ public class FTPManager {
         mCmdFactory = new CmdFactory();
         mFTPClient = new FTPClient();
         mThreadPool = Executors.newFixedThreadPool(MAX_THREAD_NUMBER);
+    }
+
+    public void setOnUploadListener(UploadListener listener) {
+        this.listener = listener;
     }
 
     public class DameonFtpConnector implements Runnable {
@@ -153,6 +158,10 @@ public class FTPManager {
 
     private void executeCWDRequest(String path) {
         mThreadPool.execute(mCmdFactory.createCmdCWD(path));
+    }
+
+    public void executeMKDRequest(String screenID) {
+        mThreadPool.execute(mCmdFactory.createCmdMKD(screenID));
     }
 
     public abstract class FtpCmd implements Runnable {
@@ -211,7 +220,7 @@ public class FTPManager {
     }
 
     /**
-     * 当前上传文件所在FPT服务器的根目录
+     * 当前上传文件所在FTP服务器的目录
      */
     public class CmdPWD extends FtpCmd {
 
@@ -225,6 +234,51 @@ public class FTPManager {
                 ex.printStackTrace();
             }
         }
+    }
+
+    private class CmdMKD extends FtpCmd {
+
+        String targetPath;
+
+        public CmdMKD(String targetPath) {
+            this.targetPath = targetPath;
+        }
+
+        @Override
+        public void run() {
+            if (!isDirExist(targetPath)) {
+                try {
+                    mFTPClient.createDirectory(targetPath);
+                    mFTPClient.changeDirectory(targetPath);
+                    LogManager.getLogger().e("FTP已创建文件夹: %s", targetPath);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     * 检查目录是否存在
+     */
+    private boolean isDirExist(String targetPath) {
+        try {
+            String currentDirectory = mFTPClient.currentDirectory();
+            if (currentDirectory.length() > 1) {
+                String dirName = currentDirectory.substring(currentDirectory.lastIndexOf("/") + 1);
+                if(dirName.equals(targetPath)) {
+                    LogManager.getLogger().e("FTP已存在目标文件夹");
+                    return true;
+                }
+            }
+            mFTPClient.changeDirectory(targetPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+            LogManager.getLogger().e("FTP不存在目标文件夹");
+            return false;
+        }
+        LogManager.getLogger().e("FTP已存在目标文件夹");
+        return true;
     }
 
     /**
@@ -276,7 +330,7 @@ public class FTPManager {
     }
 
     /**
-     * 上传文件
+     * 上传文件至FTP指定目录
      */
     class CmdUpload extends AsyncTask<String, Integer, Boolean> {
 
@@ -290,17 +344,34 @@ public class FTPManager {
             try {
                 String fileName = path.substring(path.lastIndexOf("/") + 1);
                 LogManager.getLogger().e("上传文件名: %s", fileName);
-                executeLISTRequest();
+                /*executeLISTRequest();
                 for (FTPFile ftpFile : mFileList) {
                     LogManager.getLogger().e("FTP服务器文件: %s", ftpFile.getName());
                     if (ftpFile.getName().equals(fileName)) {
                         mHandler.sendEmptyMessage(MSG_FILENAME_REPETITION);
                         return false;
                     }
+                }*/
+                String screenID = BaseApplication.getScreenID();
+                if (!isDirExist(screenID)) {
+                    mFTPClient.createDirectory(screenID);
+                    mFTPClient.changeDirectory(screenID);
+                    LogManager.getLogger().e("FTP已创建文件夹: %s", screenID);
                 }
+                LogManager.getLogger().e("FTP当前目录: %s", mFTPClient.currentDirectory());
                 File file = new File(path);
+                LogManager.getLogger().e("上传文件length(前): %d", file.length());
                 mFTPClient.upload(file, new DownloadFTPDataTransferListener(
                         file.length()));
+                // 上传后更新数据库
+                List<PackageInfo> packageInfos = PackageDao.queryFileName(fileName);
+                if (packageInfos != null && packageInfos.size() != 0) {
+                    PackageInfo packageInfo = packageInfos.get(0);
+                    LogManager.getLogger().e("上传后正在更新的数据: %s", packageInfo.toString());
+                    packageInfo.setHasUpload(true);
+                    PackageDao.update(packageInfo);
+                }
+                LogManager.getLogger().e("数据库中所有数据: %s",PackageDao.queryAll().toString());
             } catch (Exception ex) {
                 ex.printStackTrace();
                 return false;
@@ -316,6 +387,7 @@ public class FTPManager {
         protected void onPostExecute(Boolean result) {
             LogManager.getLogger().e("上传结果: %s", path + "  结果：" +result);
             toast(result ? path + "上传成功" : "上传失败");
+            listener.uploadFinish();
         }
     }
 
@@ -331,6 +403,7 @@ public class FTPManager {
                         "the size of file muset be larger than zero.");
             }
             this.fileSize = fileSize;
+            LogManager.getLogger().e("上传文件length(后): %d", fileSize);
         }
 
         @Override
@@ -381,6 +454,9 @@ public class FTPManager {
         public FtpCmd createCmdCWD(String path) {
             return new CmdCWD(path);
         }
+
+        public FtpCmd createCmdMKD(String targetPath) {
+            return new CmdMKD(targetPath);}
     }
 
     public void disConnect() {
@@ -399,4 +475,5 @@ public class FTPManager {
     private void toast(String hint) {
         Toast.makeText(context, hint, Toast.LENGTH_SHORT).show();
     }
+
 }

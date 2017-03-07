@@ -22,28 +22,36 @@ public class CommandsHelper {
     private static final String ROOT_DIR = Environment.getExternalStorageDirectory().getAbsolutePath();
     public static boolean isCaptruing = false;
     private static Process suProcess;
+    private static CaptureDataListener mlistener;
 
     public static Process initSuProcess() throws IOException {
         suProcess = Runtime.getRuntime().exec("su");
         return suProcess;
     }
 
-    public static void startCapture(String fileName) {
-        try {
+    public static void setOnCaptureDataListener(CaptureDataListener listener) {
+        mlistener = listener;
+    }
+
+    /**
+     * 开始抓包
+     * @param fileDirName 文件在SDcard根目录下的存储路径
+     * @throws Exception
+     */
+    public static void startCapture(String fileDirName) throws Exception {
+
             if (isCaptruing == false) {
                 initSuProcess();
                 String[] commands = new String[1];
-                commands[0] = "tcpdump -vv -s 0 -w " + ROOT_DIR + fileName;
+                commands[0] = "tcpdump -vv -s 0 -w " + ROOT_DIR + fileDirName;
                 execCmd(commands, suProcess);
-                LogManager.getLogger().e("抓包状态: %s", "开始抓包");
                 isCaptruing = true;
+                String fileName = fileDirName.substring(fileDirName.lastIndexOf("/") + 1);
+                mlistener.onStartCaptrue();
+                LogManager.getLogger().e("抓包状态: %s", "开始抓包");
                 suProcess.waitFor();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
     }
 
     public static void stopCapture() {
@@ -51,12 +59,13 @@ public class CommandsHelper {
             suProcess.destroy();
             suProcess = null;
             isCaptruing = false;
+            mlistener.onStopCaptrue();
             LogManager.getLogger().e("抓包状态: %s", "停止抓包");
         }
     }
 
-    public static void execCmd(String[] commands, Process process) {
-        try {
+    public static void execCmd(String[] commands, Process process) throws IOException {
+
             DataOutputStream os = new DataOutputStream(process.getOutputStream());
             for (String cmd : commands) {
                 if (!TextUtils.isEmpty(cmd)) {
@@ -64,9 +73,7 @@ public class CommandsHelper {
                 }
             }
             os.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
     }
 
     private static void copyStream(InputStream is, OutputStream os) {

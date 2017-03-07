@@ -19,30 +19,49 @@ public class MainActivityPresenter {
     public MainActivityPresenter(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
         ftpManager = new FTPManager(mainActivity);
+        ftpManager.setOnUploadListener(mainActivity);
         // 与FTP服务器建立连接
         ftpManager.executeConnectRequest();
     }
 
-    public void uploadFile() {
-        ArrayList<File> pcapFiles = getPcapFiles();
-        if (pcapFiles == null || pcapFiles.size() == 0) {
+    /**
+     * 上传文件
+     *
+     * @param fileName null:上传pcap文件夹中最新的数据包；!null:上传文件名对应的数据包
+     */
+    public void uploadFile(String fileName) {
+        if (BaseApplication.getScreenID() == null) {
             return;
         }
-        File pcapFile = pcapFiles.get(pcapFiles.size() - 1);
-        //上传文件到FTP
-        FTPManager.CmdUpload cmdUpload = ftpManager.new CmdUpload();
-        cmdUpload.execute(pcapFile.getAbsolutePath());
+        File pcapFile = null;
+        if (fileName != null) {
+            String pcapDirName = mainActivity.getResources().getString(R.string.pcap_dir_name);
+            String pcapDir = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + pcapDirName + File.separator + fileName;
+            //上传文件到FTP
+            FTPManager.CmdUpload cmdUpload = ftpManager.new CmdUpload();
+            cmdUpload.execute(pcapDir);
+        } else {
+            ArrayList<File> pcapFiles = getPcapFiles();
+            if (pcapFiles == null || pcapFiles.size() == 0) {
+                return;
+            }
+            pcapFile = pcapFiles.get(pcapFiles.size() - 1);
+            //上传文件到FTP
+            FTPManager.CmdUpload cmdUpload = ftpManager.new CmdUpload();
+            cmdUpload.execute(pcapFile.getAbsolutePath());
+        }
     }
 
     public ArrayList<File> getPcapFiles() {
-        File pcapDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "pcap");
+        String pcapDirName = mainActivity.getResources().getString(R.string.pcap_dir_name);
+        File pcapDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + pcapDirName);
         if (!pcapDir.exists() && !pcapDir.isDirectory()) {
             pcapDir.mkdir();
         } else {
             File[] files = pcapDir.listFiles();
             ArrayList<File> pcapFiles = new ArrayList<>();
             for (File file : files) {
-                if (file.isFile() && file.getName().endsWith("pcap")) {
+                if (file.isFile() && file.getName().endsWith(pcapDirName)) {
                     pcapFiles.add(file);
                 }
             }
@@ -62,6 +81,23 @@ public class MainActivityPresenter {
                 pcapFiles.get(i).delete();
             }
         }
+    }
+
+    /**
+     * 清空抓包文件
+     */
+    public void clearAllPcapFiles() {
+        String pcapDirName = mainActivity.getResources().getString(R.string.pcap_dir_name);
+        File pcapDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + pcapDirName);
+        if (pcapDir.exists() && pcapDir.isDirectory()) {
+            File[] pcaps = pcapDir.listFiles();
+            if (pcaps.length > 0) {
+                for (File pcap : pcaps) {
+                    pcap.delete();
+                }
+            }
+        }
+        LogManager.getLogger().e("清空文件后的pcap文件夹大小: %d", pcapDir.listFiles().length);
     }
 
     public void disConnect() {

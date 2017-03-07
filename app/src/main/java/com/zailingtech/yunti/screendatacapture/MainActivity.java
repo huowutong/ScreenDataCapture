@@ -6,18 +6,22 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.File;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, CaptureDataListener, UploadListener {
 
     private TextView tv01;
     private String screenID = "000000"; //默认ID
@@ -26,11 +30,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button btn_upload;
     private Button btn_info;
     private String fileName; //包文件名
-    private static final int maxNum = 4; //保存抓包数据的最大数量
+    private static final int maxNum = 4; //保存抓包数据的最大数量 -- tips:如果按时间来管理最大包数量，可以使用包名上的时间
+    private static final String autoStopTime = "230000"; //精度是否可以降低？
     private MainActivityPresenter presenter;
     private String rootPath;
     private ActionReceiver actionReceiver;
     private String fileDirName;
+    private boolean isChecked = false;
+    private boolean firstUpload = false;
+    private boolean hasStartTask = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,11 +58,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void initData() {
         presenter = new MainActivityPresenter(this);
+        CommandsHelper.setOnCaptureDataListener(this);
         ArrayList<File> pcapFiles = presenter.getPcapFiles();
         //处理SD卡中的包的数量
         presenter.handlePcapFils(pcapFiles, maxNum);
         rootPath = Environment.getExternalStorageDirectory().getAbsolutePath();
         LogManager.getLogger().e(getIntent().getAction());
+
+    }
+
+    private void checkAndUpload() {
+        LogManager.getLogger().e("查询数据库并上传条件: %s %s", isChecked, BaseApplication.getScreenID());
+        if (!isChecked && BaseApplication.getScreenID() != null) {
+            // 查询数据库，最新的一条数据的是否已上传？
+            List<PackageInfo> packageInfos = PackageDao.queryUploadFlag(false, 1);
+            LogManager.getLogger().e("APP打开查询数据库: %s", packageInfos.toString());
+            if (packageInfos != null && packageInfos.size() > 0) {
+                LogManager.getLogger().e("上次有未上传文件,正在上传: %s", packageInfos.get(0).getFileName());
+                presenter.uploadFile(packageInfos.get(0).getFileName());
+            }
+            isChecked = true;
+        }
     }
 
     private void initView() {
@@ -81,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (view.getId()) {
             case R.id.btn_start:
                 btn_start.setEnabled(false);
+                BaseApplication.setScreenID(screenID);
                 startCapture();
                 break;
             case R.id.btn_stop:
@@ -88,10 +113,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 btn_start.setEnabled(true);
                 break;
             case R.id.btn_upload:
-                presenter.uploadFile();
+                presenter.uploadFile(null);
                 break;
             case R.id.btn_info:
-                LogManager.getLogger().e("pcap文件夹中数据包详情--后: %s", presenter.getPcapFiles().toString());
+//                LogManager.getLogger().e("pcap文件夹中数据包详情--后: %s", presenter.getPcapFiles().toString());
+                LogManager.getLogger().e("数据库中所有数据: %s", PackageDao.queryAll().toString());
                 break;
         }
     }
@@ -104,7 +130,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         new Thread() {
             @Override
             public void run() {
-                CommandsHelper.startCapture(fileDirName);
+                try {
+                    CommandsHelper.startCapture(fileDirName);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }.start();
     }
@@ -118,6 +148,48 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         LogManager.getLogger().e("抓包APP已退出");
     }
 
+    @Override
+    public void onStartCaptrue() {
+        //开始抓包后在数据库中插入一条数据
+        PackageDao.insert(new PackageInfo(null, fileName, false));
+        LogManager.getLogger().e("数据库中所有数据: %s", PackageDao.queryAll().toString());
+        //开启定时任务,在指定时间点停止抓包并上传抓包数据
+        try {
+            if (!hasStartTask) {
+                SimpleDateFormat sdf1 = new SimpleDateFormat("yyyyMMdd");
+                Date date = new Date();
+                String time = sdf1.format(date);
+                SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMddHHmmss");
+                Date autuoUploadDate = sdf2.parse(time + autoStopTime);
+                TimerTask task = new TimerTask() {
+                    @Override
+                    public void run() {
+                        CommandsHelper.stopCapture();
+                    }
+                };
+                Timer timer = new Timer();
+                timer.schedule(task, autuoUploadDate);
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onStopCaptrue() {
+        SystemClock.sleep(1000);
+        // 停止抓包后上传抓包文件
+        presenter.uploadFile(null);
+    }
+
+    @Override
+    public void uploadFinish() {
+        if (!firstUpload) {
+            firstUpload = true;
+            startCapture();
+        }
+    }
+
     class ActionReceiver extends BroadcastReceiver {
 
         @Override
@@ -127,22 +199,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 return;
             }
             screenID = bundle.getString("ID");
+            if (BaseApplication.getScreenID() == null || !BaseApplication.getScreenID().equals(screenID)) {
+                BaseApplication.setScreenID(screenID);
+            }
             tv01.setText(screenID + " : " + rootPath);
             String action = bundle.getString("action");
             if (action != null) {
                 LogManager.getLogger().e("抓包APP收到的指令: %s", action);
                 if (action.equals("start")) {
+                    if (!isChecked) {
+                        checkAndUpload(); //首次接到广播后，查询数据库并进行上传
+                        return;
+                    }
                     startCapture();
                 } else if (action.equals("stop")) {
                     btn_start.setEnabled(true);
                     CommandsHelper.stopCapture();
                 } else if (action.equals("upload")) {
                     if (CommandsHelper.isCaptruing) {
-                        Toast.makeText(MainActivity.this, "不能在抓包过程中上传数据包", Toast.LENGTH_SHORT).show();
+                        LogManager.getLogger().e("不能在抓包过程中上传数据包");
                         return;
                     }
                     // 上传抓包文件
-                    presenter.uploadFile();
+                    presenter.uploadFile(null);
+                } else if (action.equals("clear")) {
+                    presenter.clearAllPcapFiles();
+                    PackageDao.clearAll(); // 同时清空数据库
+                    LogManager.getLogger().e("数据库清空后: %s", PackageDao.queryAll().toString());
                 } else if (action.equals("exit")) {
                     MainActivity.this.finish();
                 }
