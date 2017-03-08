@@ -8,8 +8,10 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import java.io.File;
@@ -29,9 +31,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button btn_stop;
     private Button btn_upload;
     private Button btn_info;
+    private EditText et_stop_time;
     private String fileName; //包文件名
     private static final int maxNum = 4; //保存抓包数据的最大数量 -- tips:如果按时间来管理最大包数量，可以使用包名上的时间
-    private static final String autoStopTime = "230000"; //精度是否可以降低？
+    private static final String autoStopTime = "101600";
     private MainActivityPresenter presenter;
     private String rootPath;
     private ActionReceiver actionReceiver;
@@ -43,6 +46,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getSupportActionBar().hide();
         setContentView(R.layout.activity_main);
         initView();
         registerReceiver();
@@ -67,18 +71,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
-    private void checkAndUpload() {
+    private boolean checkAndUpload() {
         LogManager.getLogger().e("查询数据库并上传条件: %s %s", isChecked, BaseApplication.getScreenID());
         if (!isChecked && BaseApplication.getScreenID() != null) {
             // 查询数据库，最新的一条数据的是否已上传？
+            isChecked = true;
             List<PackageInfo> packageInfos = PackageDao.queryUploadFlag(false, 1);
             LogManager.getLogger().e("APP打开查询数据库: %s", packageInfos.toString());
             if (packageInfos != null && packageInfos.size() > 0) {
                 LogManager.getLogger().e("上次有未上传文件,正在上传: %s", packageInfos.get(0).getFileName());
                 presenter.uploadFile(packageInfos.get(0).getFileName());
+                firstUpload = true;
+                return true;
             }
-            isChecked = true;
+            firstUpload = false;
         }
+        return false;
     }
 
     private void initView() {
@@ -87,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btn_stop = (Button) findViewById(R.id.btn_stop);
         btn_upload = (Button) findViewById(R.id.btn_upload);
         btn_info = (Button) findViewById(R.id.btn_info);
+        et_stop_time = (EditText) findViewById(R.id.et_stop_time);
         btn_info.setOnClickListener(this);
         btn_start.setOnClickListener(this);
         btn_stop.setOnClickListener(this);
@@ -118,6 +127,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn_info:
 //                LogManager.getLogger().e("pcap文件夹中数据包详情--后: %s", presenter.getPcapFiles().toString());
                 LogManager.getLogger().e("数据库中所有数据: %s", PackageDao.queryAll().toString());
+                startTimerTask();
                 break;
         }
     }
@@ -153,22 +163,45 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //开始抓包后在数据库中插入一条数据
         PackageDao.insert(new PackageInfo(null, fileName, false));
         LogManager.getLogger().e("数据库中所有数据: %s", PackageDao.queryAll().toString());
+        //startTimerTask();
+    }
+
+    private void startTimerTask() {
         //开启定时任务,在指定时间点停止抓包并上传抓包数据
         try {
             if (!hasStartTask) {
+                long period = 24 * 60 * 60 * 1000;
                 SimpleDateFormat sdf1 = new SimpleDateFormat("yyyyMMdd");
                 Date date = new Date();
                 String time = sdf1.format(date);
                 SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMddHHmmss");
-                Date autuoUploadDate = sdf2.parse(time + autoStopTime);
+                String autoTime = et_stop_time.getText().toString();
+                if (TextUtils.isEmpty(autoTime)) {
+                    return;
+                }
+                Date autuoUploadDate = sdf2.parse(time + autoTime);
+//                Date autuoUploadDate = sdf2.parse(time + autoStopTime);
+                // 如果今天的已经过了 首次运行时间就改为明天
+                if (System.currentTimeMillis() > autuoUploadDate.getTime()) {
+                    autuoUploadDate = new Date(autuoUploadDate.getTime() + period);
+                }
                 TimerTask task = new TimerTask() {
                     @Override
                     public void run() {
+                        LogManager.getLogger().e("定时任务已执行");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                btn_start.setEnabled(true);
+                            }
+                        });
                         CommandsHelper.stopCapture();
                     }
                 };
                 Timer timer = new Timer();
-                timer.schedule(task, autuoUploadDate);
+                // 每24小时执行一次
+                timer.scheduleAtFixedRate(task, autuoUploadDate, period);
+                LogManager.getLogger().e("定时任务已准备");
             }
         } catch (ParseException e) {
             e.printStackTrace();
@@ -184,8 +217,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void uploadFinish() {
-        if (!firstUpload) {
-            firstUpload = true;
+        if (firstUpload) {
+            firstUpload = false;
             startCapture();
         }
     }
@@ -208,8 +241,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 LogManager.getLogger().e("抓包APP收到的指令: %s", action);
                 if (action.equals("start")) {
                     if (!isChecked) {
-                        checkAndUpload(); //首次接到广播后，查询数据库并进行上传
-                        return;
+                        //首次接到广播后，查询数据库并进行上传
+                        if (checkAndUpload()) {
+                            return;
+                        }
                     }
                     startCapture();
                 } else if (action.equals("stop")) {
