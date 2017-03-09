@@ -53,6 +53,9 @@ public class MainActivityPresenter {
     }
 
     public ArrayList<File> getPcapFiles() {
+        if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            return null;
+        }
         String pcapDirName = mainActivity.getResources().getString(R.string.pcap_dir_name);
         File pcapDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + pcapDirName);
         if (!pcapDir.exists() && !pcapDir.isDirectory()) {

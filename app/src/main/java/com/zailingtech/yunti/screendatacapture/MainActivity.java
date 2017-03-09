@@ -133,6 +133,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void startCapture() {
+        if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            LogManager.getLogger().e("未找到SD卡");
+            return;
+        }
         btn_start.setEnabled(false);
         fileName = "capture_" + screenID + "_" + getCurrentTime() + ".pcap";
         // 文件在SDcard根目录下的存储路径
