@@ -30,7 +30,7 @@ public class MainActivityPresenter {
      * @param fileName null:上传pcap文件夹中最新的数据包；!null:上传文件名对应的数据包
      */
     public void uploadFile(String fileName) {
-        if (BaseApplication.getScreenID() == null) {
+        if (BaseApplication.getInstance().getScreenID() == null) {
             return;
         }
         File pcapFile = null;

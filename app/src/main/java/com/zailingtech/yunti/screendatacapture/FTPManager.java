@@ -352,7 +352,7 @@ public class FTPManager {
                         return false;
                     }
                 }*/
-                String screenID = BaseApplication.getScreenID();
+                String screenID = BaseApplication.getInstance().getScreenID();
                 if (!isDirExist(screenID)) {
                     mFTPClient.createDirectory(screenID);
                     mFTPClient.changeDirectory(screenID);

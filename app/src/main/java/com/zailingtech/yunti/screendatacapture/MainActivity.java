@@ -72,12 +72,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private boolean checkAndUpload() {
-        LogManager.getLogger().e("查询数据库并上传条件: %s %s", isChecked, BaseApplication.getScreenID());
-        if (!isChecked && BaseApplication.getScreenID() != null) {
+        LogManager.getLogger().e("查询数据库并上传条件: %s %s", isChecked, BaseApplication.getInstance().getScreenID());
+        if (!isChecked && BaseApplication.getInstance().getScreenID() != null) {
             // 查询数据库，最新的一条数据的是否已上传？
             isChecked = true;
             List<PackageInfo> packageInfos = PackageDao.queryUploadFlag(false, 1);
-            LogManager.getLogger().e("APP打开查询数据库: %s", packageInfos.toString());
+            LogManager.getLogger().e("APP打开时查询数据库: %s", packageInfos.toString());
             if (packageInfos != null && packageInfos.size() > 0) {
                 LogManager.getLogger().e("上次有未上传文件,正在上传: %s", packageInfos.get(0).getFileName());
                 presenter.uploadFile(packageInfos.get(0).getFileName());
@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (view.getId()) {
             case R.id.btn_start:
                 btn_start.setEnabled(false);
-                BaseApplication.setScreenID(screenID);
+                BaseApplication.getInstance().setScreenID(screenID);
                 startCapture();
                 break;
             case R.id.btn_stop:
@@ -181,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 Date autuoUploadDate = sdf2.parse(time + autoTime);
 //                Date autuoUploadDate = sdf2.parse(time + autoStopTime);
-                // 如果今天的已经过了 首次运行时间就改为明天
+                // 如果今天的时间已经过了 首次运行时间就改为明天
                 if (System.currentTimeMillis() > autuoUploadDate.getTime()) {
                     autuoUploadDate = new Date(autuoUploadDate.getTime() + period);
                 }
@@ -232,8 +232,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 return;
             }
             screenID = bundle.getString("ID");
-            if (BaseApplication.getScreenID() == null || !BaseApplication.getScreenID().equals(screenID)) {
-                BaseApplication.setScreenID(screenID);
+            if (BaseApplication.getInstance().getScreenID() == null || !BaseApplication.getInstance().getScreenID().equals(screenID)) {
+                BaseApplication.getInstance().setScreenID(screenID);
             }
             tv01.setText(screenID + " : " + rootPath);
             String action = bundle.getString("action");

@@ -13,15 +13,24 @@ import com.zailingtech.greendao.gen.DaoSession;
 
 public class BaseApplication extends Application {
 
-    private static DaoSession daoSession;
-    private static String ScreenID;
+    private DaoSession daoSession;
+    private String screenID;
+    private static BaseApplication instance;
 
-    public static String getScreenID() {
-        return ScreenID;
+    public BaseApplication() {
+        instance = this;
     }
 
-    public static void setScreenID(String screenID) {
-        ScreenID = screenID;
+    public static BaseApplication getInstance() {
+        return instance;
+    }
+
+    public String getScreenID() {
+        return screenID;
+    }
+
+    public void setScreenID(String screenID) {
+        this.screenID = screenID;
     }
 
     @Override
@@ -45,7 +54,7 @@ public class BaseApplication extends Application {
         daoSession = daoMaster.newSession();
     }
 
-    public static DaoSession getDaoInstant() {
+    public DaoSession getDaoInstance() {
         return daoSession;
     }
 }

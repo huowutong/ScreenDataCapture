@@ -17,7 +17,7 @@ public class PackageDao {
      * @param packageInfo
      */
     public static void insert(PackageInfo packageInfo) {
-        BaseApplication.getDaoInstant().getPackageInfoDao().insertOrReplace(packageInfo);
+        BaseApplication.getInstance().getDaoInstance().getPackageInfoDao().insertOrReplace(packageInfo);
     }
 
     /**
@@ -26,7 +26,7 @@ public class PackageDao {
      * @param id
      */
     public static void delete(long id) {
-        BaseApplication.getDaoInstant().getPackageInfoDao().deleteByKey(id);
+        BaseApplication.getInstance().getDaoInstance().getPackageInfoDao().deleteByKey(id);
     }
 
     /**
@@ -35,7 +35,7 @@ public class PackageDao {
      * @param packageInfo
      */
     public static void update(PackageInfo packageInfo) {
-        BaseApplication.getDaoInstant().getPackageInfoDao().update(packageInfo);
+        BaseApplication.getInstance().getDaoInstance().getPackageInfoDao().update(packageInfo);
     }
 
     /**
@@ -44,7 +44,7 @@ public class PackageDao {
      * @return
      */
     public static List<PackageInfo> queryUploadFlag(boolean hasUpload) {
-        return BaseApplication.getDaoInstant().getPackageInfoDao().queryBuilder()
+        return BaseApplication.getInstance().getDaoInstance().getPackageInfoDao().queryBuilder()
                 .where(PackageInfoDao.Properties.HasUpload.eq(hasUpload))
                 .orderDesc(PackageInfoDao.Properties.FileName).list();
     }
@@ -61,7 +61,7 @@ public class PackageDao {
         } else if (num == 0) {
             return queryUploadFlag(hasUpload);
         } else {
-            return BaseApplication.getDaoInstant().getPackageInfoDao().queryBuilder()
+            return BaseApplication.getInstance().getDaoInstance().getPackageInfoDao().queryBuilder()
                     .where(PackageInfoDao.Properties.HasUpload.eq(hasUpload))
                     .orderDesc(PackageInfoDao.Properties.FileName)
                     .limit(num).list();
@@ -74,7 +74,7 @@ public class PackageDao {
      * @return
      */
     public static List<PackageInfo> queryFileName(String fileName) {
-        return BaseApplication.getDaoInstant().getPackageInfoDao().queryBuilder()
+        return BaseApplication.getInstance().getDaoInstance().getPackageInfoDao().queryBuilder()
                 .where(PackageInfoDao.Properties.FileName.eq(fileName))
                 .orderDesc(PackageInfoDao.Properties.FileName).list();
     }
@@ -83,10 +83,10 @@ public class PackageDao {
      * 查询全部数据
      */
     public static List<PackageInfo> queryAll() {
-        return BaseApplication.getDaoInstant().getPackageInfoDao().loadAll();
+        return BaseApplication.getInstance().getDaoInstance().getPackageInfoDao().loadAll();
     }
 
     public static void clearAll() {
-        BaseApplication.getDaoInstant().getPackageInfoDao().deleteAll();
+        BaseApplication.getInstance().getDaoInstance().getPackageInfoDao().deleteAll();
     }
 }
