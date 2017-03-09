@@ -57,21 +57,19 @@ public class MainActivityPresenter {
             return null;
         }
         String pcapDirName = mainActivity.getResources().getString(R.string.pcap_dir_name);
-        File pcapDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + pcapDirName);
-        if (!pcapDir.exists() && !pcapDir.isDirectory()) {
-            pcapDir.mkdir();
-        } else {
-            File[] files = pcapDir.listFiles();
-            ArrayList<File> pcapFiles = new ArrayList<>();
-            for (File file : files) {
-                if (file.isFile() && file.getName().endsWith(pcapDirName)) {
-                    pcapFiles.add(file);
-                }
-            }
-            Collections.sort(pcapFiles);
-            return pcapFiles;
+        File pcapDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath(), pcapDirName);
+        if (!pcapDir.exists() && !pcapDir.mkdir()) {
+            return null;
         }
-        return null;
+        File[] files = pcapDir.listFiles();
+        ArrayList<File> pcapFiles = new ArrayList<>();
+        for (File file : files) {
+            if (file.isFile() && file.getName().endsWith(pcapDirName)) {
+                pcapFiles.add(file);
+            }
+        }
+        Collections.sort(pcapFiles);
+        return pcapFiles;
     }
 
     public void handlePcapFils(ArrayList<File> pcapFiles, int maxNum) {
