@@ -9,10 +9,13 @@ import android.os.SystemClock;
 import android.support.annotation.Nullable;
 
 import java.io.File;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Description: 接收到抓包指令后的抓包服务 <br>
@@ -24,6 +27,7 @@ public class CaptureService extends Service implements CaptureDataListener, Uplo
 
     private MainActivityPresenter presenter;
     private static final int MAX_NUM = 4; //保存抓包数据的最大数量 -- tips:如果按时间来管理最大包数量，可以使用包名上的时间
+    private static final String AUTO_STOP_TIME = "112500"; //格式:HHmmss
     private String rootPath;
     private String fileDirName;
     private String fileName; //包文件名
@@ -92,6 +96,37 @@ public class CaptureService extends Service implements CaptureDataListener, Uplo
         return START_STICKY_COMPATIBILITY;
     }
 
+    private void startTimerTask() {
+        //开启定时任务,在指定时间点停止抓包并上传抓包数据
+        try {
+            if (!hasStartTask) {
+                long period = 24 * 60 * 60 * 1000;
+                SimpleDateFormat sdf1 = new SimpleDateFormat("yyyyMMdd");
+                Date date = new Date();
+                String time = sdf1.format(date);
+                SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMddHHmmss");
+                Date autuoUploadDate = sdf2.parse(time + AUTO_STOP_TIME);
+                // 如果今天的时间已经过了 首次运行时间就改为明天
+                if (System.currentTimeMillis() > autuoUploadDate.getTime()) {
+                    autuoUploadDate = new Date(autuoUploadDate.getTime() + period);
+                }
+                TimerTask task = new TimerTask() {
+                    @Override
+                    public void run() {
+                        LogManager.getLogger().e("定时任务已执行");
+                        CommandsHelper.stopCapture();
+                    }
+                };
+                Timer timer = new Timer();
+                // 每24小时执行一次
+                timer.scheduleAtFixedRate(task, autuoUploadDate, period);
+                LogManager.getLogger().e("定时任务已准备");
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
+
     private boolean checkAndUpload() {
         LogManager.getLogger().e("查询数据库并上传条件: %s %s", isChecked, BaseApplication.getInstance().getScreenID());
         if (!isChecked && BaseApplication.getInstance().getScreenID() != null) {
@@ -142,7 +177,7 @@ public class CaptureService extends Service implements CaptureDataListener, Uplo
         //开始抓包后在数据库中插入一条数据
         PackageDao.insert(new PackageInfo(null, fileName, new Date().getTime(), false));
         LogManager.getLogger().e("数据库中所有数据: %s", PackageDao.queryAll().toString());
-        //startTimerTask();
+        startTimerTask();
     }
 
     @Override
