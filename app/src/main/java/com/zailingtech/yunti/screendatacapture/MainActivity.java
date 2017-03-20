@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+/**
+ * MainActivity中的抓包逻辑已全部转移到CaptureService
+ */
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, CaptureDataListener, UploadListener {
 
     private TextView tv01;
@@ -33,8 +36,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button btn_info;
     private EditText et_stop_time;
     private String fileName; //包文件名
-    private static final int maxNum = 4; //保存抓包数据的最大数量 -- tips:如果按时间来管理最大包数量，可以使用包名上的时间
-    private static final String autoStopTime = "101600";
+    private static final int MAX_NUM = 4; //保存抓包数据的最大数量 -- tips:如果按时间来管理最大包数量，可以使用包名上的时间
+    private static final String AUTO_STOP_TIME = "101600"; //格式:HHmmss
     private MainActivityPresenter presenter;
     private String rootPath;
     private ActionReceiver actionReceiver;
@@ -48,15 +51,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         getSupportActionBar().hide();
         setContentView(R.layout.activity_main);
-        initView();
-        registerReceiver();
-        initData();
+//        initView();
+//        registerReceiver();
+//        initData();
     }
 
     private void registerReceiver() {
         actionReceiver = new ActionReceiver();
         IntentFilter filter = new IntentFilter();
-        filter.addAction("com.zailingtech.yunti.CAPTURE_ACTION_START");
+        filter.addAction("com.zailingtech.yunti.CAPTURE_ACTION");
         registerReceiver(actionReceiver, filter);
     }
 
@@ -65,7 +68,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         CommandsHelper.setOnCaptureDataListener(this);
         ArrayList<File> pcapFiles = presenter.getPcapFiles();
         //处理SD卡中的包的数量
-        presenter.handlePcapFils(pcapFiles, maxNum);
+        presenter.handlePcapFils(pcapFiles, MAX_NUM);
         rootPath = Environment.getExternalStorageDirectory().getAbsolutePath();
         LogManager.getLogger().e(getIntent().getAction());
 
@@ -153,19 +156,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }.start();
     }
 
-    @Override
+/*    @Override
     protected void onDestroy() {
         super.onDestroy();
         CommandsHelper.stopCapture();
-        unregisterReceiver(actionReceiver);
+//        unregisterReceiver(actionReceiver);
         presenter.disConnect();
         LogManager.getLogger().e("抓包APP已退出");
-    }
+    }*/
 
     @Override
     public void onStartCaptrue() {
         //开始抓包后在数据库中插入一条数据
-        PackageDao.insert(new PackageInfo(null, fileName, false));
+        PackageDao.insert(new PackageInfo(null, fileName, new Date().getTime(), false));
         LogManager.getLogger().e("数据库中所有数据: %s", PackageDao.queryAll().toString());
         //startTimerTask();
     }
@@ -184,7 +187,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     return;
                 }
                 Date autuoUploadDate = sdf2.parse(time + autoTime);
-//                Date autuoUploadDate = sdf2.parse(time + autoStopTime);
+//                Date autuoUploadDate = sdf2.parse(time + AUTO_STOP_TIME);
                 // 如果今天的时间已经过了 首次运行时间就改为明天
                 if (System.currentTimeMillis() > autuoUploadDate.getTime()) {
                     autuoUploadDate = new Date(autuoUploadDate.getTime() + period);
@@ -231,6 +234,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            LogManager.getLogger().e("动态广播接收者收到广播");
             Bundle bundle = intent.getExtras();
             if (bundle == null) {
                 return;
@@ -262,6 +266,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     // 上传抓包文件
                     presenter.uploadFile(null);
                 } else if (action.equals("clear")) {
+                    if (CommandsHelper.isCaptruing) {
+                        LogManager.getLogger().e("不能在抓包过程中清除数据");
+                        return;
+                    }
                     presenter.clearAllPcapFiles();
                     PackageDao.clearAll(); // 同时清空数据库
                     LogManager.getLogger().e("数据库清空后: %s", PackageDao.queryAll().toString());

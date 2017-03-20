@@ -68,6 +68,11 @@ public class PackageDao {
         }
     }
 
+    public static List<PackageInfo> queryUploadDate(long uploadTime) {
+        return BaseApplication.getInstance().getDaoInstance().getPackageInfoDao().queryBuilder()
+                .where(PackageInfoDao.Properties.UploadDate.lt(uploadTime)).list();
+    }
+
     /**
      * 查询条件为fileName的数据
      * @param fileName

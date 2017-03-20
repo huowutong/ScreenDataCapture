@@ -1,10 +1,13 @@
 package com.zailingtech.yunti.screendatacapture;
 
+import android.content.Context;
 import android.os.Environment;
+import android.os.SystemClock;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * @author LUTAO
@@ -13,15 +16,20 @@ import java.util.Collections;
 
 public class MainActivityPresenter {
 
-    private MainActivity mainActivity;
+    private Context context;
     private FTPManager ftpManager;
 
-    public MainActivityPresenter(MainActivity mainActivity) {
-        this.mainActivity = mainActivity;
-        ftpManager = new FTPManager(mainActivity);
-        ftpManager.setOnUploadListener(mainActivity);
+    public MainActivityPresenter(Context context) {
+        this.context = context;
+        ftpManager = new FTPManager(context);
+        if (context instanceof MainActivity) {
+            ftpManager.setOnUploadListener((MainActivity)context);
+        } else if (context instanceof CaptureService) {
+            ftpManager.setOnUploadListener((CaptureService)context);
+        }
         // 与FTP服务器建立连接
         ftpManager.executeConnectRequest();
+        SystemClock.sleep(1000); //休眠1s等待子线程中的登陆完成
     }
 
     /**
@@ -35,7 +43,7 @@ public class MainActivityPresenter {
         }
         File pcapFile = null;
         if (fileName != null) {
-            String pcapDirName = mainActivity.getResources().getString(R.string.pcap_dir_name);
+            String pcapDirName = context.getResources().getString(R.string.pcap_dir_name);
             String pcapDir = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + pcapDirName + File.separator + fileName;
             //上传文件到FTP
             FTPManager.CmdUpload cmdUpload = ftpManager.new CmdUpload();
@@ -56,7 +64,7 @@ public class MainActivityPresenter {
         if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
             return null;
         }
-        String pcapDirName = mainActivity.getResources().getString(R.string.pcap_dir_name);
+        String pcapDirName = context.getResources().getString(R.string.pcap_dir_name);
         File pcapDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath(), pcapDirName);
         if (!pcapDir.exists() && !pcapDir.mkdir()) {
             return null;
@@ -64,7 +72,7 @@ public class MainActivityPresenter {
         File[] files = pcapDir.listFiles();
         ArrayList<File> pcapFiles = new ArrayList<>();
         for (File file : files) {
-            if (file.isFile() && file.getName().endsWith(pcapDirName)) {
+            if (file.isFile() && file.getName().endsWith("pcap")) {
                 pcapFiles.add(file);
             }
         }
@@ -80,6 +88,11 @@ public class MainActivityPresenter {
         if (pcapFiles.size() > maxNum) {
             for (int i = 0; i < pcapFiles.size() - maxNum; i++) {
                 pcapFiles.get(i).delete();
+                List<PackageInfo> packageInfos = PackageDao.queryFileName(pcapFiles.get(i).getName());
+                if (packageInfos == null || packageInfos.size() == 0) {
+                    continue;
+                }
+                PackageDao.delete(packageInfos.get(0).getId()); // 删除本地数据的同时删除数据库中对应的记录
             }
         }
     }
@@ -88,7 +101,7 @@ public class MainActivityPresenter {
      * 清空抓包文件
      */
     public void clearAllPcapFiles() {
-        String pcapDirName = mainActivity.getResources().getString(R.string.pcap_dir_name);
+        String pcapDirName = context.getResources().getString(R.string.pcap_dir_name);
         File pcapDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + pcapDirName);
         if (pcapDir.exists() && pcapDir.isDirectory()) {
             File[] pcaps = pcapDir.listFiles();

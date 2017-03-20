@@ -9,23 +9,31 @@
     <application
         android:name=".BaseApplication"
         android:allowBackup="true"
-        android:icon="@mipmap/cloud_computing"
+        android:icon="@mipmap/ic_app"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/NoTitleTranslucentTheme">
+        android:theme="@style/AppTheme">
         <activity
             android:name=".MainActivity"
-            android:launchMode="singleInstance">
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="com.zailingtech.yunti.CAPTURE_ACTION_START" />
+<!--            <intent-filter>
+                <action android:name="com.zailingtech.yunti.CAPTURE_ACTION" />
                 <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
+            </intent-filter>-->
         </activity>
+
+        <receiver android:name=".CaptureReceiver">
+            <intent-filter>
+                <action android:name="com.zailingtech.yunti.CAPTURE_ACTION_START"/>
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".CaptureService"/>
     </application>
 
 </manifest>

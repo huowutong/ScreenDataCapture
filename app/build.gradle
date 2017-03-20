@@ -20,7 +20,16 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            zipAlignEnabled true
+            shrinkResources false
+            //signingConfig signingConfigs.release
+            proguardFile './proguard-rules.txt'
+        }
+        debug {
+            minifyEnabled false
+            zipAlignEnabled true
+            shrinkResources false
+            proguardFile './proguard-rules.txt'
         }
     }
 }
