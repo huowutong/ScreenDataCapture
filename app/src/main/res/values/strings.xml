@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">智能屏抓包</string>
     <string name="pcap_dir_name">pcap</string>
+    <string name="auto_stop_time">230000</string> <!-- 时间格式 HHmmss -->
 </resources>

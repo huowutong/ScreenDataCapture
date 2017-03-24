@@ -17,9 +17,19 @@ android {
         daoPackage 'com.zailingtech.greendao.gen'
         targetGenDir 'src/main/java'
     }
+    signingConfigs {
+        debug {
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+        release {
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             zipAlignEnabled true
             shrinkResources false
             //signingConfig signingConfigs.release

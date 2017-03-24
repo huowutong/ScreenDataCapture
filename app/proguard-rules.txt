@@ -140,15 +140,22 @@
    public static final int *;
 }
 
-# #  ######## greenDao混淆  ##########
+# #  ######## greenDao3混淆  ##########
 # # -------------------------------------------
--keep class de.greenrobot.dao.** {*;}
--keepclassmembers class * extends de.greenrobot.dao.AbstractDao {
-    public static Java.lang.String TABLENAME;
+-keepclassmembers class * extends org.greenrobot.greendao.AbstractDao {
+public static java.lang.String TABLENAME;
 }
 -keep class **$Properties
+# If you do not use SQLCipher:
+-dontwarn org.greenrobot.greendao.database.**
+# If you do not use RxJava:
+-dontwarn rx.**
 
 # #  ######## ftp4j混淆  ##########
 # # -------------------------------------------
--libraryjars libs/ftp4j-1.7.2.jar
 -keep class it.sauronsoftware.ftp4j.**{*;}
+-dontwarn it.sauronsoftware.ftp4j.**
+
+# #  ######## 实体类不混淆  ##########
+# # -------------------------------------------
+-keep class com.zailingtech.yunti.screendatacapture.PackageInfo

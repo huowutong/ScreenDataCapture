@@ -27,7 +27,7 @@
             </intent-filter>-->
         </activity>
 
-        <receiver android:name=".CaptureReceiver">
+        <receiver android:name=".CaptureReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="com.zailingtech.yunti.CAPTURE_ACTION_START"/>
             </intent-filter>

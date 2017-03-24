@@ -27,7 +27,7 @@ public class CaptureService extends Service implements CaptureDataListener, Uplo
 
     private MainActivityPresenter presenter;
     private static final int MAX_NUM = 4; //保存抓包数据的最大数量 -- tips:如果按时间来管理最大包数量，可以使用包名上的时间
-    private static final String AUTO_STOP_TIME = "112500"; //格式:HHmmss
+//    private static final String AUTO_STOP_TIME = "112500"; //格式:HHmmss 已放到strings.xml中
     private String rootPath;
     private String fileDirName;
     private String fileName; //包文件名
@@ -105,7 +105,7 @@ public class CaptureService extends Service implements CaptureDataListener, Uplo
                 Date date = new Date();
                 String time = sdf1.format(date);
                 SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMddHHmmss");
-                Date autuoUploadDate = sdf2.parse(time + AUTO_STOP_TIME);
+                Date autuoUploadDate = sdf2.parse(time + getResources().getString(R.string.auto_stop_time));
                 // 如果今天的时间已经过了 首次运行时间就改为明天
                 if (System.currentTimeMillis() > autuoUploadDate.getTime()) {
                     autuoUploadDate = new Date(autuoUploadDate.getTime() + period);
