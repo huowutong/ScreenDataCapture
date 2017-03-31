@@ -122,15 +122,18 @@ public class MainActivityPresenter {
         ftpManager.disConnect();
     }
 
-    public void getCupUsageInfo() {
+    public float getCupUsageInfo() {
         long totalMemory = helper.getTotalMemory();
         long freeMemorySize = helper.getFreeMemorySize();
         float memoryUsage = (totalMemory - freeMemorySize) / (float) totalMemory * 100;
         LogManager.getLogger().e("内存使用率：%.1f%%", memoryUsage);
+        return memoryUsage;
+
     }
 
-    public void getMemoryUsageInfo() {
+    public float getMemoryUsageInfo() {
         float cpuUsage = helper.getCpuUsage();
         LogManager.getLogger().e("CPU使用率：%.1f%%", cpuUsage * 100);
+        return cpuUsage;
     }
 }

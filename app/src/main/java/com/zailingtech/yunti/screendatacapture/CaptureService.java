@@ -41,6 +41,8 @@ public class CaptureService extends Service implements CaptureDataListener, Uplo
     private long endTime; //正在检查CPU内存状况的时间
     private static final int CHECK_DURATION = 30; //检查CPU内存状况的持续时间（min）
     private Timer checkTimer;
+    private Intent intent;
+    private Bundle bundle;
     //    private RunningInfoHelper helper;
 
     @Override
@@ -126,16 +128,34 @@ public class CaptureService extends Service implements CaptureDataListener, Uplo
         TimerTask checkTask = new TimerTask() {
             @Override
             public void run() {
-                presenter.getCupUsageInfo();
-                presenter.getMemoryUsageInfo();
                 endTime = System.currentTimeMillis();
                 if (endTime - startTime > CHECK_DURATION * 60 * 1000) {
                     checkTimer.cancel();
-                    checkTimer = null;
+                    return;
                 }
+                float cupUsageInfo = presenter.getCupUsageInfo();
+                float memoryUsageInfo = presenter.getMemoryUsageInfo();
+                // 通过广播发送数据
+                sendInfo(cupUsageInfo, memoryUsageInfo);
             }
         };
-        checkTimer.scheduleAtFixedRate(checkTask, 0L, 3000);
+        checkTimer.scheduleAtFixedRate(checkTask, 0, 3000);
+    }
+
+    /**
+     * 广播发送数据
+     * @param cupUsageInfo
+     * @param memoryUsageInfo
+     */
+    private void sendInfo(float cupUsageInfo, float memoryUsageInfo) {
+        if (intent == null) {
+            intent = new Intent("com.zailingtech.yunti.USAGEINFO");
+            bundle = new Bundle();
+        }
+        bundle.putFloat("cupUsage", cupUsageInfo);
+        bundle.putFloat("memoryUsage", memoryUsageInfo);
+        intent.putExtras(bundle);
+        sendBroadcast(intent);
     }
 
     private void startTimerTask() {

@@ -236,7 +236,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            LogManager.getLogger().e("动态广播接收者收到广播");
             Bundle bundle = intent.getExtras();
             if (bundle == null) {
                 return;
