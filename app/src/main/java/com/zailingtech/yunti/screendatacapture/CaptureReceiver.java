@@ -17,7 +17,6 @@ public class CaptureReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        LogManager.getLogger().e("静态广播接送者收到广播");
         Bundle bundle = intent.getExtras();
         if (bundle == null) {
             return;

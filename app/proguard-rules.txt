@@ -158,4 +158,4 @@ public static java.lang.String TABLENAME;
 
 # #  ######## 实体类不混淆  ##########
 # # -------------------------------------------
--keep class com.zailingtech.yunti.screendatacapture.PackageInfo
+-keep class com.zailingtech.yunti.screendatacapture.model.** {*;}

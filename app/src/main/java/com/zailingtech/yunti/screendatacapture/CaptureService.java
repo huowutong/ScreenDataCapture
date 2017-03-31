@@ -8,6 +8,8 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 
+import com.zailingtech.yunti.screendatacapture.model.PackageInfo;
+
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -35,6 +37,11 @@ public class CaptureService extends Service implements CaptureDataListener, Uplo
     private boolean isChecked = false;
     private boolean firstUpload = false;
     private boolean hasStartTask = false;
+    private long startTime; //开始检查CPU内存状况的时间
+    private long endTime; //正在检查CPU内存状况的时间
+    private static final int CHECK_DURATION = 30; //检查CPU内存状况的持续时间（min）
+    private Timer checkTimer;
+    //    private RunningInfoHelper helper;
 
     @Override
     public void onCreate() {
@@ -44,7 +51,7 @@ public class CaptureService extends Service implements CaptureDataListener, Uplo
         //处理SD卡中的包的数量
         presenter.handlePcapFils(pcapFiles, MAX_NUM);
         rootPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-//        LogManager.getLogger().e(getIntent().getAction());
+//        helper = RunningInfoHelper.getInstace(this);
     }
 
     @Nullable
@@ -91,9 +98,44 @@ public class CaptureService extends Service implements CaptureDataListener, Uplo
                 presenter.clearAllPcapFiles();
                 PackageDao.clearAll(); // 同时清空数据库
                 LogManager.getLogger().e("数据库清空后: %s", PackageDao.queryAll().toString());
+            } else if (action.equals("startCheck")) {
+                doCheckTask();
+            } else if (action.equals("stopCheck")) {
+                stopcheck();
             }
         }
         return START_STICKY_COMPATIBILITY;
+    }
+
+    /**
+     * 停止监控
+     */
+    private void stopcheck() {
+        if (checkTimer != null) {
+            checkTimer.cancel();
+        }
+    }
+
+    /**
+     * 监控CPU内存使用状况
+     */
+    private void doCheckTask() {
+        startTime = System.currentTimeMillis();
+        endTime = startTime;
+        checkTimer = new Timer();
+        TimerTask checkTask = new TimerTask() {
+            @Override
+            public void run() {
+                presenter.getCupUsageInfo();
+                presenter.getMemoryUsageInfo();
+                endTime = System.currentTimeMillis();
+                if (endTime - startTime > CHECK_DURATION * 60 * 1000) {
+                    checkTimer.cancel();
+                    checkTimer = null;
+                }
+            }
+        };
+        checkTimer.scheduleAtFixedRate(checkTask, 0L, 3000);
     }
 
     private void startTimerTask() {

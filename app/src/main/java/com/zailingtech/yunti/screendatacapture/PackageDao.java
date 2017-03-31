@@ -1,6 +1,7 @@
 package com.zailingtech.yunti.screendatacapture;
 
 import com.zailingtech.greendao.gen.PackageInfoDao;
+import com.zailingtech.yunti.screendatacapture.model.PackageInfo;
 
 import java.util.List;
 

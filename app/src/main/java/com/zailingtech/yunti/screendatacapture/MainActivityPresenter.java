@@ -4,6 +4,8 @@ import android.content.Context;
 import android.os.Environment;
 import android.os.SystemClock;
 
+import com.zailingtech.yunti.screendatacapture.model.PackageInfo;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +20,7 @@ public class MainActivityPresenter {
 
     private Context context;
     private FTPManager ftpManager;
+    private RunningInfoHelper helper;
 
     public MainActivityPresenter(Context context) {
         this.context = context;
@@ -27,6 +30,7 @@ public class MainActivityPresenter {
         } else if (context instanceof CaptureService) {
             ftpManager.setOnUploadListener((CaptureService)context);
         }
+        helper = RunningInfoHelper.getInstace(context);
         // 与FTP服务器建立连接
         ftpManager.executeConnectRequest();
         SystemClock.sleep(1000); //休眠1s等待子线程中的登陆完成
@@ -116,5 +120,17 @@ public class MainActivityPresenter {
 
     public void disConnect() {
         ftpManager.disConnect();
+    }
+
+    public void getCupUsageInfo() {
+        long totalMemory = helper.getTotalMemory();
+        long freeMemorySize = helper.getFreeMemorySize();
+        float memoryUsage = (totalMemory - freeMemorySize) / (float) totalMemory * 100;
+        LogManager.getLogger().e("内存使用率：%.1f%%", memoryUsage);
+    }
+
+    public void getMemoryUsageInfo() {
+        float cpuUsage = helper.getCpuUsage();
+        LogManager.getLogger().e("CPU使用率：%.1f%%", cpuUsage * 100);
     }
 }

@@ -14,6 +14,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.zailingtech.yunti.screendatacapture.model.PackageInfo;
+
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

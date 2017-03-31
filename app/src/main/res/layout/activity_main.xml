@@ -60,5 +60,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="40dp"
-        android:inputType="number" />
+        android:inputType="number"
+        android:visibility="invisible" />
 </FrameLayout>

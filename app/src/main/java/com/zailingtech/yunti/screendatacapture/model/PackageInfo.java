@@ -1,4 +1,4 @@
-package com.zailingtech.yunti.screendatacapture;
+package com.zailingtech.yunti.screendatacapture.model;
 
 import org.greenrobot.greendao.annotation.Entity;
 import org.greenrobot.greendao.annotation.Id;

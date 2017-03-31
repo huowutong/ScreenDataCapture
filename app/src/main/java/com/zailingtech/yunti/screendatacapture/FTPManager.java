@@ -6,6 +6,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.widget.Toast;
 
+import com.zailingtech.yunti.screendatacapture.model.PackageInfo;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
